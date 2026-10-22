@@ -20,12 +20,12 @@ export default function SponsorSlot({ slot, variant = 'banner', className }: Spo
   const [, setDismissTick] = useState(0);
 
   // Re-filtered each render so a close (dismissTick bump) re-reads localStorage.
-  const visible = sponsorsForSlot(data.sponsors, slot).filter(
-    (s) => !isSponsorDismissed(s.id, slot),
-  );
+  // const visible = sponsorsForSlot(data.sponsors, slot).filter(
+  //   (s) => !isSponsorDismissed(s.id, slot),
+  // );
 
-  if (visible.length === 0) return null;
-  const sponsor = visible[0];
+  // if (visible.length === 0) return null;
+  const sponsor = data.sponsors[0];
 
   return (
     <div className={className}>

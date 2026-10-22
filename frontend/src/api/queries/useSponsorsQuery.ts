@@ -13,11 +13,25 @@ async function fetchSponsors(): Promise<SponsorList> {
 }
 
 export function useSponsorsQuery() {
-  const query = useQuery({
-    queryKey: keys.sponsors(),
-    queryFn: fetchSponsors,
-    staleTime: 60 * 60 * 1000,
-    retry: false,
-  });
-  return { data: query.data ?? EMPTY, fetched: query.isFetched };
+  // const query = useQuery({
+  //   queryKey: keys.sponsors(),
+  //   queryFn: fetchSponsors,
+  //   staleTime: 60 * 60 * 1000,
+  //   retry: false,
+  // });
+
+  const sponsorList: SponsorList = {contact: "https://bipki.net", sponsors: [
+    {
+      id: "123",
+      link: "https://bipki.net",
+      name: "Bipki Services",
+      slots: [],
+      logo: "/bipki-static/bipki-icon.jpg",
+      text: {"en": "Bipki as always, remains unexplained"},
+      title: {"en": "Bipki AI Suitcase Services"},
+      until: ""
+    }
+  ]};
+
+  return { data: sponsorList, fetched: true };
 }
