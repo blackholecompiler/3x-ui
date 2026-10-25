@@ -26,7 +26,7 @@ export function useSponsorsQuery() {
       link: "https://bipki.net",
       name: "Bipki Services",
       slots: [],
-      logo: "/bipki-static/bipki-icon.jpg",
+      logo: "/assets/bipki-icon.jpg",
       text: {"en": "Bipki as always, remains unexplained"},
       title: {"en": "Bipki AI Suitcase Services"},
       until: ""
