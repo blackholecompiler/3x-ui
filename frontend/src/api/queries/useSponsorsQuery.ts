@@ -25,11 +25,11 @@ export function useSponsorsQuery() {
       id: "123",
       link: "https://bipki.net",
       name: "Bipki Services",
-      slots: [],
+      slots: ["login", "dashboard"],
       logo: "/assets/bipki-icon.jpg",
       text: {"en": "Bipki as always, remains unexplained"},
       title: {"en": "Bipki AI Suitcase Services"},
-      until: ""
+      until: "2099-01-01T00:00:00Z"
     }
   ]};
 
