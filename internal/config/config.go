@@ -169,6 +169,12 @@ func GetDBPath() string {
 	return fmt.Sprintf("%s/%s.db", GetDBFolderPath(), GetName())
 }
 
+// GetInstalledXrayFolderPath returns where a panel-installed Xray core is kept. It
+// sits beside the database because a Docker image replaces the bin folder wholesale.
+func GetInstalledXrayFolderPath() string {
+	return filepath.Join(GetDBFolderPath(), "xray")
+}
+
 // GetUpdateStatusFilePath returns the path to the panel self-update status
 // file update.sh writes on completion. It lives beside the database, outside
 // XUI_MAIN_FOLDER, so it survives an update regardless of what happens to

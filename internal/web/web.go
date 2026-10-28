@@ -324,6 +324,9 @@ const (
 // jobs) which the panel relies on for periodic maintenance and monitoring.
 func (s *Server) startTask(restartXray bool, loc *time.Location) {
 	if restartXray {
+		if err := xray.RestoreInstalledBinary(); err != nil {
+			logger.Warning("restore panel-installed xray failed, keeping the bundled core:", err)
+		}
 		err := s.xrayService.RestartXray(true)
 		if err != nil {
 			logger.Warning("start xray failed:", err)
