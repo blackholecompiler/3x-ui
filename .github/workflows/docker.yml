@@ -46,11 +46,13 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          context: git
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=tag
             type=raw,value=latest
+          # The event's github.sha is main's tip under workflow_run, not the commit built here.
+          labels: |
+            org.opencontainers.image.revision=${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Build and push
         uses: docker/build-push-action@v7
