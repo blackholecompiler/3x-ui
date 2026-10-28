@@ -140,14 +140,13 @@ configs for the same inbound.
 
 ## What CI runs
 
-`.github/workflows/ci.yml`, on every pull request touching Go or frontend code.
-It is paths-filtered, so a docs-only or workflow-only change produces no run.
+`.github/workflows/ci.yml`, on every push and pull request touching Go, frontend
+or Docker image files. It is paths-filtered, so a docs-only change produces no run.
 
 | job | what it proves |
 | --- | --- |
 | `go-test` | `go test -shuffle=on -count=1` over every package except `frontend/node_modules` |
 | `race` | the same set under `-race -shuffle=on` |
-| `postgres-durable-first` | live PostgreSQL 16: the `PostgresCommitFailure` tests plus `TestHostAutoMigrateCreatesColumns_Postgres` and `TestMigrate_Postgres`. Both steps COUNT passes rather than assert on SKIP, so a renamed or deleted test fails the job |
 | `govulncheck` | known vulnerabilities |
 | `golangci` | `golangci-lint` |
 | `fuzz-smoke` | 30s each on `FuzzParseLink` and `FuzzDecodeCertPin` |
@@ -155,7 +154,7 @@ It is paths-filtered, so a docs-only or workflow-only change produces no run.
 | `frontend` | lint, format:check, typecheck, `npm test` (Vitest + headless-Chromium Storybook), build, build-storybook, `npm audit` |
 
 **What CI does NOT prove.** These test families `t.Skip` unless an environment
-variable is set, and CI sets only the PostgreSQL ones above:
+variable is set, and CI sets none of them:
 
 | gate | covers |
 | --- | --- |
