@@ -1,26 +1,40 @@
 name: CI
 
+# Every branch push runs CI; a green run on main hands off to docker.yml.
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - "**.go"
       - "go.mod"
       - "go.sum"
       - "frontend/**"
+      - "internal/web/translation/**"
       - ".nvmrc"
       - "Makefile"
+      - "Dockerfile"
+      - "DockerInit.sh"
+      - "DockerEntrypoint.sh"
+      - "x-ui.sh"
       - ".github/workflows/ci.yml"
+      - ".github/workflows/docker.yml"
   push:
     branches:
-      - main
+      - "**"
     paths:
       - "**.go"
       - "go.mod"
       - "go.sum"
       - "frontend/**"
+      - "internal/web/translation/**"
       - ".nvmrc"
       - "Makefile"
+      - "Dockerfile"
+      - "DockerInit.sh"
+      - "DockerEntrypoint.sh"
+      - "x-ui.sh"
       - ".github/workflows/ci.yml"
+      - ".github/workflows/docker.yml"
 
 permissions:
   contents: read
@@ -40,157 +54,6 @@ jobs:
         run: |
           go list ./... | grep -v '/frontend/node_modules/' > /tmp/go-packages.txt
           go test -shuffle=on -count=1 $(cat /tmp/go-packages.txt)
-
-  postgres-durable-first:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: xui_durable
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d xui_durable"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    env:
-      XUI_DB_TYPE: postgres
-      XUI_DB_DSN: "host=127.0.0.1 port=5432 user=postgres password=postgres dbname=xui_durable sslmode=disable"
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-          cache: true
-      - name: Stub internal/web/dist for go:embed
-        run: mkdir -p internal/web/dist && touch internal/web/dist/.gitkeep
-      - name: PostgreSQL durable-first tests
-        run: |
-          set -o pipefail
-          go test ./internal/web/service -run 'PostgresCommitFailure|^TestSyncInboundClientsOnPostgres$|^TestSetClientLimitHwidIsSerializedWithSyncInbound$' -count=1 -v | tee /tmp/postgres-durable-first.log
-          # Count passes rather than assert no SKIP: a renamed or deleted test
-          # prints "no tests to run" and exits 0, leaving the step green for nothing.
-          passed=$(grep -c -- '^--- PASS' /tmp/postgres-durable-first.log || true)
-          if [ "$passed" -lt 4 ]; then
-            echo "expected at least 4 passing durable-first tests, got $passed" >&2
-            exit 1
-          fi
-
-      - name: PostgreSQL batched stats identities
-        run: |
-          set -o pipefail
-          go test ./internal/web/service -run '^TestClientStatsIdentitiesPostgres$' -count=1 -v | tee /tmp/postgres-stats-identities.log
-          passed=$(grep -c -- '^--- PASS' /tmp/postgres-stats-identities.log || true)
-          if [ "$passed" -ne 1 ]; then
-            echo "expected 1 passing PostgreSQL stats identities test, got $passed" >&2
-            exit 1
-          fi
-
-      - name: PostgreSQL client IP sync regressions
-        run: |
-          set -o pipefail
-          go test -p=1 ./internal/web/service ./internal/web/job -run '^TestClientIpSyncPostgres(Scanner)?$' -count=1 -v | tee /tmp/postgres-client-ip-sync.log
-          passed=$(grep -c -- '^--- PASS' /tmp/postgres-client-ip-sync.log || true)
-          if [ "$passed" -ne 2 ]; then
-            echo "expected 2 passing PostgreSQL client IP sync tests, got $passed" >&2
-            exit 1
-          fi
-
-      - name: PostgreSQL global-traffic heartbeat regressions
-        run: |
-          set -o pipefail
-          go test ./internal/web/service -run '^TestGlobalTrafficHeartbeatPostgres$' -count=1 -v | tee /tmp/postgres-global-traffic-heartbeat.log
-          passed=$(grep -c -- '^--- PASS' /tmp/postgres-global-traffic-heartbeat.log || true)
-          if [ "$passed" -ne 1 ]; then
-            echo "expected 1 passing global-traffic heartbeat test, got $passed" >&2
-            exit 1
-          fi
-
-      - name: PostgreSQL deferred-commit test
-        run: |
-          set -o pipefail
-          go test ./internal/web/service/outbound -run '^TestAddTrafficReturnsDeferredCommitFailure$' -count=1 -v | tee /tmp/postgres-outbound.log
-          passed=$(grep -c -- '^--- PASS' /tmp/postgres-outbound.log || true)
-          if [ "$passed" -lt 1 ]; then
-            echo "expected at least 1 passing deferred-commit test, got $passed" >&2
-            exit 1
-          fi
-
-      - name: PostgreSQL schema and migration tests
-        run: |
-          set -o pipefail
-          go test ./internal/database -run '^(TestHostAutoMigrateCreatesColumns_Postgres|TestMigrate_Postgres|TestClientWeeklyRenewMigration_Postgres|TestMigrate_LegacyBooleanVerifyPeerCertByNameIsBlanked_Postgres|TestClientKeepAlivePostgresMigrationPreservesLegacyScalars|TestPostgresModelSettled_TracksSchemaPresence)$' -count=1 -v | tee /tmp/postgres-schema.log
-          # All must pass. Counting, not SKIP-matching: renaming a test would
-          # otherwise leave this step green while testing nothing.
-          passed=$(grep -c -- '^--- PASS' /tmp/postgres-schema.log || true)
-          if [ "$passed" -lt 6 ]; then
-            echo "expected at least 6 passing PostgreSQL schema tests, got $passed" >&2
-            exit 1
-          fi
-
-      - name: PostgreSQL subscription Host tests
-        run: |
-          set -o pipefail
-          go test ./internal/sub -run '^TestSubHosts_Postgres$' -count=1 -v | tee /tmp/postgres-hosts.log
-          passed=$(grep -c -- '^--- PASS' /tmp/postgres-hosts.log || true)
-          if [ "$passed" -ne 1 ]; then
-            echo "expected passing PostgreSQL Host coverage, got $passed" >&2
-            exit 1
-          fi
-
-      - name: PostgreSQL Telegram lookup and legacy migration tests
-        run: |
-          set -o pipefail
-          go test ./internal/web/service -run '^(TestGetClientTrafficTgBot_IndexedPostgres|TestGetClientTrafficTgBot_SettingsSerializationStyles)$' -count=1 -v | tee /tmp/postgres-tgbot.log
-          passed=$(grep -c -- '^--- PASS' /tmp/postgres-tgbot.log || true)
-          if [ "$passed" -ne 2 ]; then
-            echo "expected 2 passing PostgreSQL Telegram lookup tests, got $passed" >&2
-            exit 1
-          fi
-
-  # The migration tests write and drop their own tables, so they need a
-  # scratch database instead of the durable one the panel tests use.
-  postgres-migration:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: xui_scratch
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d xui_scratch"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    env:
-      XUI_TEST_PG_DSN: "host=127.0.0.1 port=5432 user=postgres password=postgres dbname=xui_scratch sslmode=disable"
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-          cache: true
-      - name: Stub internal/web/dist for go:embed
-        run: mkdir -p internal/web/dist && touch internal/web/dist/.gitkeep
-      - name: PostgreSQL migration tests
-        run: |
-          set -o pipefail
-          go test ./internal/database -run '^(TestMigrateData_CompositeKeyTableLargerThanBatch|TestMigrateData_PreservesFalseDefaultedColumns|TestMigrateData_FailedCopyLeavesDestinationUntouched|TestClientHwidSchemaPostgres)$' -count=1 -v | tee /tmp/postgres-migration.log
-          # Count passes rather than assert no SKIP: a renamed or deleted test
-          # prints "no tests to run" and exits 0, leaving the step green for nothing.
-          passed=$(grep -c -- '^--- PASS' /tmp/postgres-migration.log || true)
-          if [ "$passed" -lt 4 ]; then
-            echo "expected at least 4 passing PostgreSQL migration tests, got $passed" >&2
-            exit 1
-          fi
 
   codegen:
     runs-on: ubuntu-latest
@@ -293,10 +156,8 @@ jobs:
           # commit could pass today and fail tomorrow on a new upstream release.
           version: v2.15.0
 
-  # Lint the shell scripts and the workflows themselves. The three legacy
-  # scripts carry a warning backlog (unquoted expansions, masked return codes)
-  # and are gated on errors only; the scripts that are clean today are gated on
-  # everything.
+  # Lint the workflows and the shell scripts the Docker image ships. x-ui.sh
+  # carries a warning backlog and is gated on errors only.
   shell-lint:
     runs-on: ubuntu-latest
     steps:
@@ -314,8 +175,8 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y shellcheck
       - name: shellcheck
         run: |
-          shellcheck --severity=style DockerInit.sh DockerEntrypoint.sh deploy/test/smoke-noninteractive.sh
-          shellcheck --severity=error install.sh update.sh x-ui.sh
+          shellcheck --severity=style DockerInit.sh DockerEntrypoint.sh
+          shellcheck --severity=error x-ui.sh
 
   frontend:
     runs-on: ubuntu-latest

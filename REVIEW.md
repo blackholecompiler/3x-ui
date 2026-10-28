@@ -176,10 +176,10 @@ near-certain about and that actually breaks something:
   file, identifier). If you cannot verify it, keep the finding but say
   explicitly that it is unverified instead of asserting it.
 - "CI passed" is a claim too, and needs the same evidence: say it only of a
-  run you actually read. A green one proves less here than it looks — only
-  `postgres-durable-first` runs against PostgreSQL, `go-test` and `race` are
-  SQLite, and `XRAY_E2E_BINARY` and `XUI_SCALE_TEST` are set by no job, so
-  those tests have never run in CI at all. Where a change touches dialect,
+  run you actually read. A green one proves less here than it looks — no job
+  runs against PostgreSQL (`go-test`, `race` and `node-e2e` are all SQLite),
+  and `XRAY_E2E_BINARY` and `XUI_SCALE_TEST` are set by no job, so those tests
+  have never run in CI at all. Where a change touches dialect,
   migration or Xray gRPC code that no job exercised, say it is unverified
   rather than repeating a green tick as proof.
 

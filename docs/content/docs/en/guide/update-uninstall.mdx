@@ -83,7 +83,9 @@ Updating preserves your database and settings. Take a
 <Callout type="info">
   Docker users update differently — pull the new image and recreate the
   container (`docker compose pull && docker compose up -d`) rather than using the
-  `x-ui` update commands.
+  `x-ui` update commands. An Xray version picked in the panel is kept in
+  `/etc/x-ui/xray/`, so it survives recreating the container and takes
+  precedence over the Xray bundled with a newer image.
 </Callout>
 
 ## Uninstalling
