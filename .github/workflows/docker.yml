@@ -1,7 +1,7 @@
 name: Release 3X-UI for Docker
 
-# Publishes main as latest and a v* tag as that version, without waiting for CI;
-# manual dispatch builds the current ref. GitHub skips the paths filter for tags.
+# A v* tag publishes its version and latest; main publishes edge. Neither waits
+# for CI. GitHub skips the paths filter for tags.
 on:
   workflow_dispatch:
   push:
@@ -55,7 +55,8 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=semver,pattern={{version}}
-            type=raw,value=latest,enable=${{ github.ref_type == 'branch' }}
+            type=raw,value=latest,enable=${{ github.ref_type == 'tag' }}
+            type=raw,value=edge,enable=${{ github.ref_type == 'branch' }}
 
       - name: Build and push
         uses: docker/build-push-action@v7
