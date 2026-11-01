@@ -45,7 +45,10 @@ case $PLATFORM in
         MTG_BIN="mtg-linux-${PLATFORM}"
         ;;
 esac
-MTG_MULTI_VER=$(curl -sfL "https://api.github.com/repos/mhsanaei/mtg-multi/releases/latest" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n 1)
+# mtg-multi comes from this fork's own mtg-multi repository. It publishes
+# only the linux-amd64 archive, which is all this Docker image is built for.
+MTG_MULTI_REPO="blackholecompiler/mtg-multi"
+MTG_MULTI_VER=$(curl -sfL "https://api.github.com/repos/${MTG_MULTI_REPO}/releases/latest" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n 1)
 if [ -z "$MTG_MULTI_VER" ]; then
     echo "DockerInit: could not resolve the latest mtg-multi release tag" >&2
     exit 1
@@ -56,10 +59,10 @@ curl -sfLRO "https://github.com/XTLS/Xray-core/releases/download/v26.10.21/Xray-
 unzip "Xray-linux-${XRAY_ZIP}.zip"
 rm -f "Xray-linux-${XRAY_ZIP}.zip" geoip.dat geosite.dat
 mv xray "${XRAY_BIN}"
-# mtg-multi (MTProto sidecar) ships prebuilt release binaries for every target
-# we package, so download and unpack the matching one instead of compiling.
+# mtg-multi (MTProto sidecar) ships prebuilt release binaries, so download and
+# unpack the matching one instead of compiling.
 MTG_PKG="mtg-multi-${MTG_MULTI_VER#v}-linux-${PLATFORM}"
-curl -sfLRO "https://github.com/mhsanaei/mtg-multi/releases/download/${MTG_MULTI_VER}/${MTG_PKG}.tar.gz"
+curl -sfLRO "https://github.com/${MTG_MULTI_REPO}/releases/download/${MTG_MULTI_VER}/${MTG_PKG}.tar.gz"
 tar -xzf "${MTG_PKG}.tar.gz"
 mv "${MTG_PKG}/mtg-multi" "${MTG_BIN}"
 rm -rf "${MTG_PKG}" "${MTG_PKG}.tar.gz"
