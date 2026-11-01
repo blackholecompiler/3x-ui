@@ -141,7 +141,7 @@ configs for the same inbound.
 ## What CI runs
 
 `.github/workflows/ci.yml`, on every push and pull request touching Go, frontend
-or Docker image files. It is paths-filtered, so a docs-only change produces no run.
+or Docker image files, and on every `v*` tag. It is paths-filtered, so a docs-only change produces no run.
 
 | job | what it proves |
 | --- | --- |

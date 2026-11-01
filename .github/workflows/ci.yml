@@ -1,6 +1,7 @@
 name: CI
 
-# Every branch push runs CI; a green run on main hands off to docker.yml.
+# A green run on main or on a v* tag hands off to docker.yml. GitHub skips the
+# paths filter for tag pushes, so every tag runs CI.
 on:
   workflow_dispatch:
   pull_request:
@@ -21,6 +22,8 @@ on:
   push:
     branches:
       - "**"
+    tags:
+      - "v*"
     paths:
       - "**.go"
       - "go.mod"

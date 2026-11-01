@@ -1,12 +1,14 @@
 name: Release 3X-UI for Docker
 
-# Publishes only a commit that passed CI on main; manual dispatch builds the current ref.
+# Publishes only a commit that passed CI on main (as latest) or on a v* tag (as that
+# version); manual dispatch builds the current ref.
 on:
   workflow_dispatch:
   workflow_run:
     workflows: [CI]
     types: [completed]
-    branches: [main]
+    # For a tag push, workflow_run reports the tag name as head_branch.
+    branches: [main, "v*"]
 
 permissions:
   contents: read
@@ -48,8 +50,8 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=ref,event=tag
-            type=raw,value=latest
+            type=semver,pattern={{version}},value=${{ github.event.workflow_run.head_branch }},enable=${{ github.event.workflow_run.head_branch != 'main' }}
+            type=raw,value=latest,enable=${{ github.event.workflow_run.head_branch == 'main' || (github.event_name == 'workflow_dispatch' && github.ref_type == 'branch') }}
           # The event's github.sha is main's tip under workflow_run, not the commit built here.
           labels: |
             org.opencontainers.image.revision=${{ github.event.workflow_run.head_sha || github.sha }}
