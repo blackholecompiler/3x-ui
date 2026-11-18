@@ -47,7 +47,7 @@ case $PLATFORM in
 esac
 # mtg-multi comes from this fork's own mtg-multi repository. It publishes
 # only the linux-amd64 archive, which is all this Docker image is built for.
-MTG_MULTI_REPO="blackholecompiler/mtg-multi"
+MTG_MULTI_REPO="mhsanaei/mtg-multi"
 MTG_MULTI_VER=$(curl -sfL "https://api.github.com/repos/${MTG_MULTI_REPO}/releases/latest" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n 1)
 if [ -z "$MTG_MULTI_VER" ]; then
     echo "DockerInit: could not resolve the latest mtg-multi release tag" >&2
